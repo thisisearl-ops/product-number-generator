@@ -6,6 +6,12 @@ body {
   min-height: 100vh;
   background-color: #f0f2f5;
   margin: 0;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
 }
 
 .container {
@@ -14,10 +20,21 @@ body {
   padding: 40px;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+body.dark .container {
+  background-color: #16213e;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
 }
 
 h1 {
   color: #333;
+  transition: color 0.3s;
+}
+
+body.dark h1 {
+  color: #e0e0e0;
 }
 
 #generate-btn {
@@ -54,4 +71,37 @@ h1 {
   font-size: 20px;
   font-weight: bold;
   color: #333;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark .number {
+  background-color: #0f3460;
+  color: #e0e0e0;
+}
+
+#theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: border-color 0.3s, background-color 0.3s;
+  z-index: 100;
+}
+
+#theme-toggle:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+body.dark #theme-toggle {
+  border-color: #555;
+}
+
+body.dark #theme-toggle:hover {
+  background-color: rgba(255,255,255,0.05);
 }
