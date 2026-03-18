@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>문의하기</title>
+  <link href='/style.css' rel='stylesheet'>
+  <style>
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #555;
+    }
+    body.dark .form-group label {
+      color: #aaa;
+    }
+    .form-group input,
+    .form-group textarea {
+      padding: 10px 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: sans-serif;
+      transition: border-color 0.2s, background-color 0.3s, color 0.3s;
+      background-color: #fff;
+      color: #333;
+    }
+    body.dark .form-group input,
+    body.dark .form-group textarea {
+      background-color: #0f3460;
+      border-color: #555;
+      color: #e0e0e0;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #4CAF50;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    #submit-btn {
+      width: 100%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-top: 4px;
+    }
+    #submit-btn:hover {
+      background-color: #45a049;
+    }
+    #submit-btn:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+    .success-msg {
+      display: none;
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+    body.dark .success-msg {
+      background-color: #1b4332;
+      color: #a5d6a7;
+    }
+    .back-link {
+      display: inline-block;
+      margin-top: 20px;
+      color: #4CAF50;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+  <div class="container" style="width: 100%; max-width: 480px;">
+    <h1>문의하기</h1>
+    <form id="contact-form" action="https://formspree.io/f/mjgajzqo" method="POST">
+      <div class="form-group">
+        <label for="name">이름</label>
+        <input type="text" id="name" name="name" placeholder="홍길동" required />
+      </div>
+      <div class="form-group">
+        <label for="email">이메일</label>
+        <input type="email" id="email" name="email" placeholder="example@email.com" required />
+      </div>
+      <div class="form-group">
+        <label for="message">문의 내용</label>
+        <textarea id="message" name="message" placeholder="문의 내용을 입력해주세요." required></textarea>
+      </div>
+      <button type="submit" id="submit-btn">보내기</button>
+      <div class="success-msg" id="success-msg">✅ 문의가 성공적으로 전송되었습니다!</div>
+    </form>
+    <a href="/index.html" class="back-link">← 메인으로 돌아가기</a>
+  </div>
+  <script>
+    // Dark mode
+    const themeToggle = document.getElementById('theme-toggle');
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    // Form submit via fetch (AJAX)
+    const form = document.getElementById('contact-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const successMsg = document.getElementById('success-msg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = '전송 중...';
+
+      const data = new FormData(form);
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { Accept: 'application/json' }
+      });
+
+      if (res.ok) {
+        form.reset();
+        successMsg.style.display = 'block';
+        submitBtn.textContent = '보내기';
+      } else {
+        alert('전송에 실패했습니다. 다시 시도해주세요.');
+        submitBtn.textContent = '보내기';
+      }
+      submitBtn.disabled = false;
+    });
+  </script>
+</body>
+</html>
