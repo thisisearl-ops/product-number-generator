@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cat or Dog? - AI Classifier</title>
+  <link href='/style.css' rel='stylesheet'>
+  <style>
+    .card {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .drop-zone {
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 40px 20px;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      margin-top: 24px;
+      text-align: center;
+      color: #888;
+      font-size: 15px;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #4CAF50;
+      background-color: rgba(76,175,80,0.05);
+    }
+    body.dark .drop-zone {
+      border-color: #555;
+      color: #888;
+    }
+    body.dark .drop-zone:hover, body.dark .drop-zone.dragover {
+      border-color: #4CAF50;
+      background-color: rgba(76,175,80,0.08);
+    }
+
+    .drop-zone .icon { font-size: 40px; margin-bottom: 10px; }
+
+    #preview-wrap {
+      display: none;
+      margin-top: 20px;
+    }
+    #preview {
+      max-width: 100%;
+      max-height: 280px;
+      border-radius: 8px;
+      object-fit: contain;
+    }
+
+    #result {
+      margin-top: 24px;
+      display: none;
+    }
+    .result-label {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+    .result-label.cat { color: #e67e22; }
+    .result-label.dog { color: #3498db; }
+
+    .bar-wrap {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+    .bar-title {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .bar-bg {
+      background-color: #e0e0e0;
+      border-radius: 20px;
+      height: 14px;
+      overflow: hidden;
+    }
+    body.dark .bar-bg { background-color: #0f3460; }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.5s ease;
+    }
+    .bar-fill.cat { background-color: #e67e22; }
+    .bar-fill.dog { background-color: #3498db; }
+
+    #loading {
+      display: none;
+      margin-top: 20px;
+      color: #888;
+      font-size: 14px;
+    }
+
+    #reset-btn {
+      margin-top: 20px;
+      background: none;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      padding: 8px 20px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #555;
+      transition: border-color 0.2s, color 0.2s;
+      display: none;
+    }
+    #reset-btn:hover { border-color: #4CAF50; color: #4CAF50; }
+    body.dark #reset-btn { border-color: #555; color: #aaa; }
+    body.dark #reset-btn:hover { border-color: #4CAF50; color: #4CAF50; }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 24px;
+      color: #4CAF50;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <button id="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+
+  <div class="container card">
+    <h1>🐱 Cat or Dog? 🐶</h1>
+    <p style="color:#888; font-size:14px; margin-top:4px;">Upload an animal photo to find out!</p>
+
+    <div class="drop-zone" id="drop-zone">
+      <div class="icon">📁</div>
+      <div>Drop an image here or <strong>click to upload</strong></div>
+      <input type="file" id="file-input" accept="image/*" style="display:none" />
+    </div>
+
+    <div id="preview-wrap">
+      <img id="preview" src="" alt="preview" />
+    </div>
+
+    <div id="loading">🔍 Analyzing...</div>
+
+    <div id="result">
+      <div class="result-label" id="result-label"></div>
+      <div class="bar-wrap">
+        <div class="bar-title"><span>🐱 Cat</span><span id="cat-pct">0%</span></div>
+        <div class="bar-bg"><div class="bar-fill cat" id="cat-bar" style="width:0%"></div></div>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-title"><span>🐶 Dog</span><span id="dog-pct">0%</span></div>
+        <div class="bar-bg"><div class="bar-fill dog" id="dog-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <button id="reset-btn">🔄 Try another image</button>
+    <br />
+    <a href="/index.html" class="back-link">← Back to main</a>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <script>
+    // Dark mode
+    const themeToggle = document.getElementById('theme-toggle');
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/XqjaPlRUx/';
+    let model;
+
+    async function loadModel() {
+      model = await tmImage.load(MODEL_URL + 'model.json', MODEL_URL + 'metadata.json');
+    }
+    loadModel();
+
+    // Drop zone
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) handleImage(file);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) handleImage(fileInput.files[0]);
+    });
+
+    function handleImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.getElementById('preview');
+        img.src = e.target.result;
+        img.onload = () => classify(img);
+        document.getElementById('preview-wrap').style.display = 'block';
+        document.getElementById('drop-zone').style.display = 'none';
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('reset-btn').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function classify(imgElement) {
+      if (!model) model = await tmImage.load(MODEL_URL + 'model.json', MODEL_URL + 'metadata.json');
+      const predictions = await model.predict(imgElement);
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('reset-btn').style.display = 'inline-block';
+
+      let topClass = predictions.reduce((a, b) => a.probability > b.probability ? a : b);
+      const label = document.getElementById('result-label');
+      label.textContent = topClass.className === 'Cat' ? '🐱 Cat!' : '🐶 Dog!';
+      label.className = 'result-label ' + topClass.className.toLowerCase();
+
+      predictions.forEach(p => {
+        const key = p.className.toLowerCase();
+        const pct = Math.round(p.probability * 100);
+        document.getElementById(key + '-pct').textContent = pct + '%';
+        document.getElementById(key + '-bar').style.width = pct + '%';
+      });
+    }
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      document.getElementById('preview-wrap').style.display = 'none';
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('reset-btn').style.display = 'none';
+      document.getElementById('drop-zone').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      fileInput.value = '';
+    });
+  </script>
+</body>
+</html>
